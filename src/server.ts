@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { prisma } from "./prisma";
 import { authRoutes } from "./routes/authRoutes";
+import { authenticate } from "./middleware/auth";
 
 const fastify = Fastify({
   logger: true,
@@ -11,6 +12,18 @@ fastify.register(authRoutes);
 fastify.get("/", async () => {
   return { message: "API is running!" };
 });
+
+// test protected route
+fastify.get(
+  "/protected",
+  { preHandler: [authenticate] },
+  async (request, reply) => {
+    return {
+      message: "Protected route accessed!",
+      user: (request as any).user,
+    };
+  }
+);
 
 // Start server
 fastify.listen({ port: 3000 }, (err, address) => {

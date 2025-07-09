@@ -1,41 +1,27 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../prisma";
+import { validateEventInput } from "../validators/eventValidator";
 
 export async function createEventHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const { title, description, date, price, imageUrl } = request.body as any;
+  const data = request.body as any;
   const user = (request as any).user;
 
-  if (!title || !description || !date || !price || !imageUrl) {
-    return reply
-      .status(400)
-      .send({ error: "Todos os campos são obrigatórios." });
-  }
-
-  const parsedDate = new Date(date);
-  if (isNaN(parsedDate.getTime())) {
-    return reply
-      .status(400)
-      .send({ error: "Data inválida. Use formato YYYY-MM-DD." });
-  }
-
-  const parsedPrice = parseFloat(price);
-  if (isNaN(parsedPrice)) {
-    return reply
-      .status(400)
-      .send({ error: "Preço inválido. Use número ou string com ponto." });
+  const { valid, errors, parsedDate } = validateEventInput(data);
+  if (!valid || !parsedDate) {
+    return reply.status(400).send({ errors });
   }
 
   try {
     const event = await prisma.event.create({
       data: {
-        title,
-        description,
-        date: new Date(date),
-        price: parseFloat(price),
-        imageUrl,
+        title: data.title,
+        description: data.description,
+        date: parsedDate,
+        price: parseFloat(data.price),
+        imageUrl: data.imageUrl,
         organizerId: user.userId,
       },
     });
@@ -66,7 +52,7 @@ export async function updateEventHandler(
   reply: FastifyReply
 ) {
   const { id } = request.params as any;
-  const { title, description, date, price, imageUrl } = request.body as any;
+  const data = request.body as any;
 
   const user = (request as any).user;
 
@@ -78,18 +64,27 @@ export async function updateEventHandler(
       .send({ error: "You don't have permission to edit this event." });
   }
 
-  const updated = await prisma.event.update({
-    where: { id: Number(id) },
-    data: {
-      title,
-      description,
-      date: new Date(date),
-      price,
-      imageUrl,
-    },
-  });
+  const { valid, errors, parsedDate } = validateEventInput(data);
+  if (!valid || !parsedDate) {
+    return reply.status(400).send({ errors });
+  }
 
-  return reply.send(updated);
+  try {
+    const updated = await prisma.event.update({
+      where: { id: Number(id) },
+      data: {
+        title: data.title,
+        description: data.description,
+        date: parsedDate,
+        price: parseFloat(data.price),
+        imageUrl: data.imageUrl,
+      },
+    });
+
+    return reply.send(updated);
+  } catch (error) {
+    return reply.status(500).send({ error: "Error updating event." });
+  }
 }
 
 export async function deleteEventHandler(

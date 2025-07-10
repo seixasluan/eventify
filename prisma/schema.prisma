@@ -35,6 +35,8 @@ model Ticket {
   userId       Int
   event        Event    @relation(fields: [eventId], references: [id])
   eventId      Int
+  quantity     Int
+  totalPrice   Float
   purchaseDate DateTime @default(now())
 }
 

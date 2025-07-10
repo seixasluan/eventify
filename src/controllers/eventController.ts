@@ -32,19 +32,34 @@ export async function createEventHandler(
   }
 }
 
-export async function getEventsHandler(
+export async function getEventHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const events = await prisma.event.findMany({
-    include: {
-      organizer: {
-        select: { name: true, email: true },
-      },
-    },
-  });
+  const { id } = request.params as { id: string };
 
-  return reply.send(events);
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: Number(id) },
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      return reply.status(404).send({ error: "Event not found." });
+    }
+
+    return reply.send(event);
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({ error: "Erro ao buscar evento." });
+  }
 }
 
 export async function updateEventHandler(
@@ -105,4 +120,30 @@ export async function deleteEventHandler(
   await prisma.event.delete({ where: { id: Number(id) } });
 
   return reply.status(204).send();
+}
+
+export async function listPublicEventsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const events = await prisma.event.findMany({
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "asc",
+      },
+    });
+
+    return reply.send(events);
+  } catch (error) {
+    console.log(error);
+    return reply.status(404).send({ error: "Error to list events." });
+  }
 }

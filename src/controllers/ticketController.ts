@@ -72,13 +72,28 @@ export async function listUserTicketsHandler(
 ) {
   const user = (request as any).user;
 
+  if (user.role !== "BUYER") {
+    return reply
+      .status(403)
+      .send({ error: "Only buyers can view their tickets." });
+  }
+
   try {
     const tickets = await prisma.ticket.findMany({
       where: {
         userId: user.userId,
       },
       include: {
-        event: true,
+        event: {
+          select: {
+            title: true,
+            date: true,
+            imageUrl: true,
+          },
+        },
+      },
+      orderBy: {
+        purchaseDate: "desc",
       },
     });
 

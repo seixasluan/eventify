@@ -102,3 +102,37 @@ export async function getUserTicketHandler(
     return reply.status(500).send({ error: "Error to find ticket." });
   }
 }
+
+export async function deleteTicketHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const user = (request as any).user;
+  const { id } = request.params as { id: string };
+
+  try {
+    // verify if ticket exist
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!ticket) {
+      return reply.status(404).send({ error: "Ticket not found." });
+    }
+
+    // check if the ticket belongs to the user
+    if (ticket.userId !== user.userId) {
+      return reply.status(403).send({ error: "Access denied." });
+    }
+
+    // delete
+    await prisma.ticket.delete({
+      where: { id: Number(id) },
+    });
+
+    return reply.send({ message: "Ticket successfully canceled." });
+  } catch (error) {
+    console.log(error);
+    return reply.status(500).send({ error: "Error canceling ticket." });
+  }
+}

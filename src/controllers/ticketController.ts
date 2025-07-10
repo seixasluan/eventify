@@ -9,7 +9,7 @@ export async function createTicketHandler(
   const data = request.body as any;
   const user = (request as any).user;
 
-  // verify user role
+  // only buyers
   if (user.role !== "BUYER") {
     return reply.status(403).send({ error: "Only buyers can buy tickets." });
   }
@@ -20,7 +20,6 @@ export async function createTicketHandler(
   }
 
   try {
-    // find event
     const event = await prisma.event.findUnique({
       where: { id: Number(data.eventId) },
     });
@@ -30,24 +29,39 @@ export async function createTicketHandler(
     }
 
     const quantity = Number(data.quantity);
-    const totalPrice = event.price * quantity;
 
-    // create ticket
-    const ticket = await prisma.ticket.create({
+    if (event.ticketsSold + quantity > event.totalTickets) {
+      return reply.status(400).send({
+        error: "Tickets sold out or requested quantity unavailable.",
+      });
+    }
+
+    // create a tickets array
+    const ticketsData = Array.from({ length: quantity }, () => ({
+      userId: user.userId,
+      eventId: event.id,
+      price: event.price,
+    }));
+
+    await prisma.ticket.createMany({
+      data: ticketsData,
+    });
+
+    // update sales counter
+    await prisma.event.update({
+      where: { id: event.id },
       data: {
-        userId: user.userId,
-        eventId: event.id,
-        quantity,
-        totalPrice,
-      },
-      include: {
-        event: true,
+        ticketsSold: {
+          increment: quantity,
+        },
       },
     });
 
-    return reply.status(201).send(ticket);
+    return reply.status(201).send({
+      message: `${quantity} ticket(s) successfully purchased.`,
+    });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return reply.status(500).send({ error: "Error to buy ticket." });
   }
 }

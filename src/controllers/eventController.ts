@@ -9,8 +9,9 @@ export async function createEventHandler(
   const data = request.body as any;
   const user = (request as any).user;
 
-  const { valid, errors, parsedDate } = validateEventInput(data);
-  if (!valid || !parsedDate) {
+  const { valid, errors, parsedDate, parsedTotalTickets } =
+    validateEventInput(data);
+  if (!valid || !parsedDate || !parsedTotalTickets) {
     return reply.status(400).send({ errors });
   }
 
@@ -22,6 +23,7 @@ export async function createEventHandler(
         date: parsedDate,
         price: parseFloat(data.price),
         imageUrl: data.imageUrl,
+        totalTickets: parsedTotalTickets,
         organizerId: user.userId,
       },
     });

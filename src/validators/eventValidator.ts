@@ -4,6 +4,7 @@ export interface EventInput {
   date: string;
   price: string | number;
   imageUrl: string;
+  totalTickets: number | string;
 }
 
 function parseDateFromDDMMYYYY(input: string): Date | null {
@@ -30,9 +31,11 @@ export function validateEventInput(data: any): {
   valid: boolean;
   errors: string[];
   parsedDate?: Date;
+  parsedTotalTickets?: number;
 } {
   const errors: string[] = [];
   let parsedDate: Date | undefined;
+  let parsedTotalTickets: number | undefined;
 
   // title
   if (!data.title || typeof data.title !== "string") {
@@ -50,7 +53,7 @@ export function validateEventInput(data: any): {
   } else {
     const maybeDate = parseDateFromDDMMYYYY(data.date);
     if (!maybeDate) {
-      errors.push("Formato de data inválido. Use DD-MM-YYYY.");
+      errors.push("Invalid date format. Use DD-MM-YYYY.");
     } else {
       parsedDate = maybeDate;
     }
@@ -58,22 +61,35 @@ export function validateEventInput(data: any): {
 
   // price
   if (data.price === undefined || data.price === null) {
-    errors.push("Preço é obrigatório.");
+    errors.push("Price is required.");
   } else {
     const parsedPrice = parseFloat(data.price);
     if (isNaN(parsedPrice) || parsedPrice < 0) {
-      errors.push("Preço deve ser um número válido e positivo.");
+      errors.push("Price must be a valid, positive number.");
     }
   }
 
   // image
   if (!data.imageUrl || typeof data.imageUrl !== "string") {
-    errors.push("URL da imagem é obrigatória e deve ser uma string.");
+    errors.push("Image URL is required.");
+  }
+
+  // totalTickets
+  if (data.totalTickets === undefined || data.totalTickets === null) {
+    errors.push("totalTickets is required.");
+  } else {
+    const parsed = parseInt(data.totalTickets);
+    if (isNaN(parsed) || parsed <= 0) {
+      errors.push("totalTickets must be integer and positive number.");
+    } else {
+      parsedTotalTickets = parsed;
+    }
   }
 
   return {
     valid: errors.length === 0,
     errors,
     parsedDate,
+    parsedTotalTickets,
   };
 }

@@ -18,15 +18,17 @@ model User {
 }
 
 model Event {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  date        DateTime
-  price       Float
-  imageUrl    String?
-  organizer   User     @relation("OrganizerEvents", fields: [organizerId], references: [id])
-  organizerId Int
-  tickets     Ticket[]
+  id            Int      @id @default(autoincrement())
+  title         String
+  description   String
+  date          DateTime
+  price         Float
+  imageUrl      String?
+  totalTickets  Int      @default(100)
+  ticketsSold   Int      @default(0)
+  organizer     User     @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  organizerId   Int
+  tickets       Ticket[]
 }
 
 model Ticket {
@@ -35,8 +37,7 @@ model Ticket {
   userId       Int
   event        Event    @relation(fields: [eventId], references: [id])
   eventId      Int
-  quantity     Int
-  totalPrice   Float
+  price        Float
   purchaseDate DateTime @default(now())
 }
 

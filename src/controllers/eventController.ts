@@ -149,3 +149,34 @@ export async function listPublicEventsHandler(
     return reply.status(404).send({ error: "Error to list events." });
   }
 }
+
+export async function listOrganizerEventsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const user = (request as any).user;
+
+  if (user.role !== "ORGANIZER") {
+    return reply
+      .status(403)
+      .send({ error: "Only organizers can view their events." });
+  }
+
+  try {
+    const events = await prisma.event.findMany({
+      where: {
+        organizerId: user.userId,
+      },
+      orderBy: {
+        date: "asc",
+      },
+    });
+
+    return reply.send(events);
+  } catch (error) {
+    console.log(error);
+    return reply
+      .status(500)
+      .send({ error: "Error fetching organizer events." });
+  }
+}

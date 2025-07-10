@@ -1,8 +1,8 @@
 import Fastify from "fastify";
-import { prisma } from "./prisma";
 import { authRoutes } from "./routes/authRoutes";
 import { authenticate } from "./middleware/auth";
 import { eventRoutes } from "./routes/eventRoutes";
+import { ticketRoutes } from "./routes/ticketRoutes";
 
 const fastify = Fastify({
   logger: true,
@@ -10,6 +10,7 @@ const fastify = Fastify({
 
 fastify.register(authRoutes);
 fastify.register(eventRoutes);
+fastify.register(ticketRoutes);
 
 fastify.get("/", async () => {
   return { message: "API is running!" };

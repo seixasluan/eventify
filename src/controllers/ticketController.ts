@@ -30,9 +30,16 @@ export async function createTicketHandler(
 
     const quantity = Number(data.quantity);
 
-    if (event.ticketsSold + quantity > event.totalTickets) {
+    if (isNaN(quantity) || quantity <= 0) {
+      return reply.status(400).send({ error: "Invalid ticket quantity." });
+    }
+
+    // calculate how much tickets are available
+    const available = event.totalTickets - event.ticketsSold;
+
+    if (quantity > available) {
       return reply.status(400).send({
-        error: "Tickets sold out or requested quantity unavailable.",
+        error: `Not enough tickets available. Only ${available} left.`,
       });
     }
 

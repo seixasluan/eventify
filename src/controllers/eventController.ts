@@ -180,3 +180,46 @@ export async function listOrganizerEventsHandler(
       .send({ error: "Error fetching organizer events." });
   }
 }
+
+export async function getEventStatsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const user = (request as any).user;
+  const { id } = request.params as { id: string };
+
+  if (user.role !== "ORGANIZER") {
+    return reply.status(403).send({ error: "Only organizers can view stats." });
+  }
+
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: Number(id) },
+      include: {
+        _count: {
+          select: { tickets: true },
+        },
+      },
+    });
+
+    if (!event) {
+      return reply.status(404).send({ error: "Event not found. " });
+    }
+
+    if (event.organizerId !== user.userId) {
+      return reply.status(403).send({ error: "You don't own this event." });
+    }
+
+    return reply.send({
+      id: event.id,
+      title: event.title,
+      totalTickets: event.totalTickets,
+      ticketsSold: event.ticketsSold,
+      remainingTickets: event.totalTickets - event._count.tickets,
+      earnings: event.ticketsSold * event.price,
+    });
+  } catch (error) {
+    console.log(error);
+    return reply.status(500).send({ error: "Error fetching event stats." });
+  }
+}

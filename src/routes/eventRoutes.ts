@@ -7,6 +7,8 @@ import {
   listPublicEventsHandler,
   listOrganizerEventsHandler,
   getEventStatsHandler,
+  uploadEventImageHandler,
+  deleteEventImageHandler,
 } from "../controllers/eventController";
 import { authenticate } from "../middleware/auth";
 import { authorizeOrganizer } from "../middleware/authorizeOrganizer";
@@ -34,6 +36,11 @@ export async function eventRoutes(fastify: FastifyInstance) {
     },
     createEventHandler
   );
+  fastify.post(
+    "/events/:id/image",
+    { preHandler: [authenticate, authorizeOrganizer] },
+    uploadEventImageHandler
+  );
 
   // put
   fastify.put(
@@ -51,5 +58,12 @@ export async function eventRoutes(fastify: FastifyInstance) {
       preHandler: [authenticate, authorizeOrganizer],
     },
     deleteEventHandler
+  );
+  fastify.delete(
+    "/events/:id/image",
+    {
+      preHandler: [authenticate, authorizeOrganizer],
+    },
+    deleteEventImageHandler
   );
 }

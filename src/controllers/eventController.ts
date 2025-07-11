@@ -1,6 +1,9 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../prisma";
 import { validateEventInput } from "../validators/eventValidator";
+import path from "path";
+import fs from "fs";
+import { MultipartFile } from "@fastify/multipart";
 
 export async function createEventHandler(
   request: FastifyRequest,
@@ -221,5 +224,107 @@ export async function getEventStatsHandler(
   } catch (error) {
     console.log(error);
     return reply.status(500).send({ error: "Error fetching event stats." });
+  }
+}
+
+export async function uploadEventImageHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const { id } = request.params as { id: string };
+  const user = (request as any).user;
+
+  // check owner
+  const event = await prisma.event.findUnique({
+    where: { id: Number(id) },
+  });
+
+  if (!event || event.organizerId !== user.userId) {
+    return reply
+      .status(403)
+      .send({ error: "You don't have permission to modify this event." });
+  }
+
+  // get uploaded file
+  const file = await (request as any).file();
+
+  if (!file) {
+    return reply.status(400).send({ error: "No file uploaded." });
+  }
+
+  // save file to disk
+  const uploadsDir = path.join(__dirname, "..", "..", "uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+  }
+
+  const filename = `event-${id}-${Date.now()}-${file.filename}`;
+  const filepath = path.join(uploadsDir, filename);
+
+  await new Promise<void>((resolve, reject) => {
+    const stream = fs.createWriteStream(filepath);
+    file.file.pipe(stream);
+    stream.on("finish", () => resolve());
+    stream.on("error", (err) => reject(err));
+  });
+
+  const imageUrl = `/uploads/${filename}`;
+
+  await prisma.event.update({
+    where: { id: Number(id) },
+    data: { imageUrl },
+  });
+
+  return reply.send({ message: "Image uploaded successfully.", imageUrl });
+}
+
+export async function deleteEventImageHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const { id } = request.params as { id: string };
+  const user = (request as any).user;
+
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!event || event.organizerId !== user.userId) {
+      return reply
+        .status(403)
+        .send({ error: "You don't have permission to modify this event." });
+    }
+
+    if (!event.imageUrl) {
+      return reply
+        .status(400)
+        .send({ error: "This event does not have an image." });
+    }
+
+    // Resolve o caminho absoluto do arquivo
+    const uploadsDir = path.join(__dirname, "..", "..");
+    const absolutePath = path.join(uploadsDir, event.imageUrl);
+
+    // Tenta remover o arquivo do disco
+    fs.unlink(absolutePath, (err) => {
+      if (err) {
+        console.error("Failed to delete file:", err);
+        // Opcional: pode decidir continuar mesmo se falhar
+      }
+    });
+
+    // Limpa a imageUrl no banco
+    await prisma.event.update({
+      where: { id: Number(id) },
+      data: {
+        imageUrl: null,
+      },
+    });
+
+    return reply.send({ message: "Event image successfully removed." });
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({ error: "Error removing event image." });
   }
 }

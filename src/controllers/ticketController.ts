@@ -96,6 +96,7 @@ export async function listUserTicketsHandler(
             title: true,
             date: true,
             imageUrl: true,
+            price: true,
           },
         },
       },
@@ -111,7 +112,7 @@ export async function listUserTicketsHandler(
   }
 }
 
-export async function getUserTicketHandler(
+export async function getUserTicketByIdHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ) {

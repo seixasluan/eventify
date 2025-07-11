@@ -166,6 +166,15 @@ export async function deleteTicketHandler(
       where: { id: Number(id) },
     });
 
+    await prisma.event.update({
+      where: { id: ticket.eventId },
+      data: {
+        ticketsSold: {
+          decrement: 1,
+        },
+      },
+    });
+
     return reply.send({ message: "Ticket successfully canceled." });
   } catch (error) {
     console.log(error);

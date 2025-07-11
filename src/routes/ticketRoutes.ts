@@ -6,7 +6,7 @@ import {
 import { authenticate } from "../middleware/auth";
 import {
   listUserTicketsHandler,
-  getUserTicketHandler,
+  getUserTicketByIdHandler,
 } from "../controllers/ticketController";
 
 export async function ticketRoutes(fastify: FastifyInstance) {
@@ -19,7 +19,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/tickets/:id",
     { preHandler: [authenticate] },
-    getUserTicketHandler
+    getUserTicketByIdHandler
   );
   fastify.delete(
     "/tickets/:id",

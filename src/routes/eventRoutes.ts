@@ -6,11 +6,13 @@ import {
   deleteEventHandler,
   listPublicEventsHandler,
   listOrganizerEventsHandler,
+  getEventStatsHandler,
 } from "../controllers/eventController";
 import { authenticate } from "../middleware/auth";
 import { authorizeOrganizer } from "../middleware/authorizeOrganizer";
 
 export async function eventRoutes(fastify: FastifyInstance) {
+  // get
   fastify.get("/events", listPublicEventsHandler);
   fastify.get(
     "/events/mine",
@@ -18,6 +20,13 @@ export async function eventRoutes(fastify: FastifyInstance) {
     listOrganizerEventsHandler
   );
   fastify.get("/events/:id", { preHandler: [authenticate] }, getEventHandler);
+  fastify.get(
+    "/events/:id/stats",
+    { preHandler: [authenticate, authorizeOrganizer] },
+    getEventStatsHandler
+  );
+
+  // post
   fastify.post(
     "/events",
     {
@@ -26,6 +35,7 @@ export async function eventRoutes(fastify: FastifyInstance) {
     createEventHandler
   );
 
+  // put
   fastify.put(
     "/events/:id",
     {
@@ -34,6 +44,7 @@ export async function eventRoutes(fastify: FastifyInstance) {
     updateEventHandler
   );
 
+  // delete
   fastify.delete(
     "/events/:id",
     {
